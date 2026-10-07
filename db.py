@@ -70,3 +70,43 @@ def get_recent_messages(user_id: int, limit: int = 10):
 
     rows.reverse()
     return rows
+def get_stats():
+    """Возвращает статистику бота из базы."""
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    # Всего пользователей
+    cursor.execute("SELECT COUNT(*) FROM users")
+    total_users = cursor.fetchone()[0]
+
+    # Всего сообщений
+    cursor.execute("SELECT COUNT(*) FROM messages")
+    total_messages = cursor.fetchone()[0]
+
+    # Сообщений сегодня
+    cursor.execute("""
+        SELECT COUNT(*) FROM messages
+        WHERE created_at::date = CURRENT_DATE
+    """)
+    today_messages = cursor.fetchone()[0]
+
+    # Топ-3 пользователя по количеству сообщений
+    cursor.execute("""
+        SELECT u.username, COUNT(m.id) AS msg_count
+        FROM users u
+        JOIN messages m ON m.user_id = u.id
+        GROUP BY u.username
+        ORDER BY msg_count DESC
+        LIMIT 3
+    """)
+    top_users = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+
+    return {
+        "total_users": total_users,
+        "total_messages": total_messages,
+        "today_messages": today_messages,
+        "top_users": top_users,
+    }

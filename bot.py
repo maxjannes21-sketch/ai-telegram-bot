@@ -55,7 +55,24 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "/help — помощь\n\n"
         "Нажмите «Пройти тест», чтобы открыть тестовый модуль."
     )
+async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    s = db.get_stats()
 
+    if s["top_users"]:
+        top_text = "\n".join(
+            f"{i+1}. @{username} — {count} сообщ."
+            for i, (username, count) in enumerate(s["top_users"])
+        )
+    else:
+        top_text = "пока нет данных"
+
+    await update.message.reply_text(
+        f"📊 Статистика бота:\n"
+        f"👥 Пользователей: {s['total_users']}\n"
+        f"💬 Всего сообщений: {s['total_messages']}\n"
+        f"📅 Сообщений сегодня: {s['today_messages']}\n\n"
+        f"🏆 Топ-3 активных:\n{top_text}"
+    )
 async def ai_reply(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_message = update.message.text
     await update.message.chat.send_action(action="typing")
@@ -91,6 +108,7 @@ async def ai_reply(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(reply)
     
 if __name__ == '__main__':
+    
     application = (
     ApplicationBuilder()
     .token(TELEGRAM_TOKEN)
@@ -100,6 +118,7 @@ if __name__ == '__main__':
     .build()
 )
     application.add_handler(CommandHandler('start', start))
+    application.add_handler(CommandHandler('stats', stats_command))
     application.add_handler(CommandHandler('help', help_command))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, ai_reply))
     print("Бот с Mini App запущен...")
