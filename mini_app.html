@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Тестовый модуль</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+            color: #333;
+        }
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        h1 { font-size: 22px; margin-bottom: 8px; color: #1a1a1a; }
+        .subtitle { color: #666; font-size: 14px; margin-bottom: 24px; }
+        .question {
+            margin-bottom: 24px;
+            padding: 16px;
+            background: #fafafa;
+            border-radius: 12px;
+        }
+        .question-number {
+            font-size: 12px;
+            color: #0088cc;
+            font-weight: 600;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+        .question-text {
+            font-size: 16px;
+            font-weight: 500;
+            margin-bottom: 16px;
+            line-height: 1.5;
+        }
+        .options {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .option {
+            padding: 14px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 15px;
+        }
+        .option:hover {
+            border-color: #0088cc;
+            background: #f0f9ff;
+        }
+        .option.selected {
+            border-color: #0088cc;
+            background: #e6f4ff;
+        }
+        .option.correct {
+            border-color: #4caf50;
+            background: #e8f5e9;
+        }
+        .option.wrong {
+            border-color: #f44336;
+            background: #ffebee;
+        }
+        .input-answer {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 15px;
+            outline: none;
+        }
+        .input-answer:focus {
+            border-color: #0088cc;
+        }
+        .btn {
+            width: 100%;
+            padding: 16px;
+            background: #0088cc;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 8px;
+        }
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .result {
+            text-align: center;
+            padding: 32px 16px;
+        }
+        .result-score {
+            font-size: 48px;
+            font-weight: 700;
+            color: #0088cc;
+            margin-bottom: 8px;
+        }
+        .result-text {
+            font-size: 18px;
+            color: #333;
+            margin-bottom: 24px;
+        }
+        .result-detail {
+            font-size: 14px;
+            color: #666;
+            line-height: 1.6;
+        }
+        .hidden { display: none; }
+        .error {
+            color: #f44336;
+            text-align: center;
+            padding: 40px 20px;
+        }
+        .spinner {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div class="spinner">Загрузка...</div>
+    </div>
+
+    <script>
+        // ===== НАСТРОЙКИ =====
+        const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbzDhEg_9P3Q3p-1OYhKJBs8Ff9C0Aa_Rab9wGIa32ZjPUSVNyvqJKkKgQwrDeqRDYxSQg/exec'; // Вставь URL из Google Apps Script
+        
+        // Белый список (пока для теста — любой может пройти)
+        // В продакшене здесь будет список разрешенных user_id
+        const ALLOWED_USERS = []; // Пустой = все могут пройти (для теста)
+        
+        // Вопросы теста
+        const QUESTIONS = [
+            {
+                type: 'choice',
+                question: 'Какой протокол используется для передачи гипертекста в интернете?',
+                options: ['FTP', 'HTTP', 'SMTP', 'TCP'],
+                correct: 1 // HTTP (индекс 1)
+            },
+            {
+                type: 'choice',
+                question: 'Что такое IP-адрес?',
+                options: [
+                    'Уникальный идентификатор устройства в сети',
+                    'Название интернет-провайдера',
+                    'Тип вируса',
+                    'Протокол шифрования'
+                ],
+                correct: 0
+            },
+            {
+                type: 'text',
+                question: 'Введите ключевое слово, которое обозначает язык разметки веб-страниц (4 буквы):',
+                correct: 'html',
+                caseSensitive: false
+            }
+        ];
+
+        let userId = null;
+        let userName = '';
+        let answers = [];
+        let currentQuestion = 0;
+
+        // Инициализация Telegram WebApp
+        function init() {
+            if (window.Telegram && Telegram.WebApp) {
+                Telegram.WebApp.ready();
+                Telegram.WebApp.expand();
+                
+                const user = Telegram.WebApp.initDataUnsafe.user;
+                if (user) {
+                    userId = user.id;
+                    userName = user.first_name + (user.last_name ? ' ' + user.last_name : '');
+                }
+            }
+            
+            // Если не в Telegram — тестовый режим
+            if (!userId) {
+                userId = 'test_user_' + Date.now();
+                userName = 'Тестовый пользователь';
+            }
+            
+            // Проверка доступа
+            if (ALLOWED_USERS.length > 0 && !ALLOWED_USERS.includes(String(userId))) {
+                showError('У вас нет доступа к этому тесту. Обратитесь к администратору курса.');
+                return;
+            }
+            
+            showTest();
+        }
+
+        function showError(msg) {
+            document.getElementById('app').innerHTML = `
+                <div class="container">
+                    <div class="error">
+                        <div style="font-size: 48px; margin-bottom: 16px;">🔒</div>
+                        <div style="font-size: 18px; font-weight: 600; margin-bottom: 8px;">Доступ ограничен</div>
+                        <div>${msg}</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function showTest() {
+            currentQuestion = 0;
+            answers = [];
+            renderQuestion();
+        }
+
+        function renderQuestion() {
+            const q = QUESTIONS[currentQuestion];
+            const progress = `Вопрос ${currentQuestion + 1} из ${QUESTIONS.length}`;
+            
+            let optionsHtml = '';
+            if (q.type === 'choice') {
+                optionsHtml = `<div class="options">
+                    ${q.options.map((opt, i) => `
+                        <div class="option" onclick="selectOption(${i})" data-index="${i}">${opt}</div>
+                    `).join('')}
+                </div>`;
+            } else {
+                optionsHtml = `<input type="text" class="input-answer" id="textAnswer" placeholder="Введите ответ...">`;
+            }
+            
+            document.getElementById('app').innerHTML = `
+                <div class="container">
+                    <div class="question-number">${progress}</div>
+                    <h1>Тестовый модуль</h1>
+                    <div class="subtitle">Образовательный курс</div>
+                    
+                    <div class="question">
+                        <div class="question-text">${q.question}</div>
+                        ${optionsHtml}
+                    </div>
+                    
+                    <button class="btn" id="nextBtn" onclick="nextQuestion()" disabled>Далее</button>
+                </div>
+            `;
+            
+            if (q.type === 'text') {
+                document.getElementById('textAnswer').addEventListener('input', function() {
+                    document.getElementById('nextBtn').disabled = this.value.trim() === '';
+                });
+                document.getElementById('textAnswer').addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') nextQuestion();
+                });
+            }
+        }
+
+        function selectOption(index) {
+            document.querySelectorAll('.option').forEach(el => el.classList.remove('selected'));
+            document.querySelector(`.option[data-index="${index}"]`).classList.add('selected');
+            document.getElementById('nextBtn').disabled = false;
+        }
+
+        function nextQuestion() {
+    // 🔒 Защита от двойного Enter / повторного клика
+    if (answers.length > currentQuestion) {
+        return;
+    }
+    
+    const q = QUESTIONS[currentQuestion];
+    let answer;
+    
+    if (q.type === 'choice') {
+        const selected = document.querySelector('.option.selected');
+        if (!selected) return;
+        answer = parseInt(selected.dataset.index);
+    } else {
+        answer = document.getElementById('textAnswer').value.trim();
+    }
+    
+    const isCorrect = q.type === 'choice' 
+        ? answer === q.correct 
+        : (q.caseSensitive ? answer === q.correct : answer.toLowerCase() === q.correct.toLowerCase());
+    
+    answers.push({
+        question: q.question,
+        answer: q.type === 'choice' ? q.options[answer] : answer,
+        correct: isCorrect,
+        correctAnswer: q.type === 'choice' ? q.options[q.correct] : q.correct
+    });
+    
+    // Показать правильный/неправильный ответ
+    if (q.type === 'choice') {
+        document.querySelectorAll('.option').forEach((el, i) => {
+            el.onclick = null;
+            el.style.cursor = 'default';
+            if (i === q.correct) el.classList.add('correct');
+            else if (i === answer && !isCorrect) el.classList.add('wrong');
+        });
+    } else {
+        // 🔒 Отключаем поле ввода, чтобы повторный Enter не сработал
+        const input = document.getElementById('textAnswer');
+        if (input) {
+            input.disabled = true;
+            input.blur();
+        }
+    }
+    
+    document.getElementById('nextBtn').textContent = currentQuestion < QUESTIONS.length - 1 ? 'Следующий вопрос' : 'Узнать результат';
+    document.getElementById('nextBtn').onclick = () => {
+        currentQuestion++;
+        if (currentQuestion < QUESTIONS.length) {
+            renderQuestion();
+        } else {
+            showResult();
+        }
+    };
+    document.getElementById('nextBtn').disabled = false;
+}
+
+        function showResult() {
+            const correctCount = answers.filter(a => a.correct).length;
+            const total = QUESTIONS.length;
+            const percent = Math.round((correctCount / total) * 100);
+            
+            let message = '';
+            if (percent === 100) message = 'Отлично! Вы ответили на все вопросы правильно!';
+            else if (percent >= 70) message = 'Хороший результат! Небольшие пробелы есть, но в целом отлично.';
+            else if (percent >= 50) message = 'Средний результат. Рекомендую повторить материал.';
+            else message = 'Нужно подучить тему. Не расстраивайтесь, практика поможет!';
+            
+            document.getElementById('app').innerHTML = `
+                <div class="container">
+                    <div class="result">
+                        <div class="result-score">${correctCount}/${total}</div>
+                        <div class="result-text">${message}</div>
+                        <div class="result-detail">
+                            Результат отправлен преподавателю.<br>
+                            Вы можете закрыть это окно.
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Отправляем результат в Google Sheets
+            sendResult({
+                date: new Date().toISOString(),
+                userId: userId,
+                userName: userName,
+                score: correctCount,
+                total: total,
+                percent: percent,
+                answers: JSON.stringify(answers)
+            });
+        }
+
+        function sendResult(data) {
+    if (SHEETS_URL === 'YOUR_GOOGLE_SCRIPT_URL') {
+        console.log('Результат (тестовый режим):', data);
+        return;
+    }
+    
+    // Собираем параметры для GET-запроса
+    var params = new URLSearchParams({
+        userId: data.userId,
+        userName: data.userName,
+        score: data.score,
+        total: data.total,
+        percent: data.percent,
+        answers: data.answers.substring(0, 500) // Ограничиваем длину
+    });
+    
+    // Отправляем через Image (обходит CORS)
+    var img = new Image();
+    img.src = SHEETS_URL + '?' + params.toString();
+    
+    console.log('Результат отправлен:', data);
+}
+
+        // Запуск
+        init();
+    </script>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</body>
+</html>
