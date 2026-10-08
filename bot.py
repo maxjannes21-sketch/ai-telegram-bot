@@ -6,6 +6,7 @@ import requests
 from datetime import datetime
 import db
 import os
+import rag
 from dotenv import load_dotenv
 # ===== НАСТРОЙКИ =====
 load_dotenv()
@@ -89,11 +90,24 @@ async def ai_reply(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # Собираем контекст для GPT
     messages = []
+     # RAG: ищем релевантные фрагменты из базы знаний
+    relevant = rag.find_relevant(user_message, top_k=2)
+    context = "\n\n".join([text for text, sim in relevant])
+
+    system_prompt = (
+        "Ты — консультант пиццерии «Моцарт» в Светлогорске. "
+        "Отвечай на вопросы клиентов, опираясь на базу знаний ниже. "
+        "Если в базе нет ответа — честно скажи, что уточнишь у менеджера. "
+        "Отвечай кратко, дружелюбно, по делу.\n\n"
+        f"База знаний:\n{context}"
+    )
+
+    # Собираем контекст для GPT: роль + история диалога + новый вопрос
+    messages = [{"role": "system", "content": system_prompt}]
     for msg_text, bot_reply in history:
         messages.append({"role": "user", "content": msg_text})
         messages.append({"role": "assistant", "content": bot_reply})
     messages.append({"role": "user", "content": user_message})
-
     try:
         response = client.chat.completions.create(
             model="openai/gpt-4o-mini",
