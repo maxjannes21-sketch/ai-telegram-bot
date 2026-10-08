@@ -2,8 +2,13 @@ import psycopg2
 import numpy as np
 import os
 from dotenv import load_dotenv
+from sentence_transformers import SentenceTransformer
 
 load_dotenv()
+
+# Модель грузится ОДИН РАЗ при старте бота
+print("RAG: загружаю модель...")
+model = SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
 
 def _load_from_db():
     """Загружает чанки и эмбеддинги из PostgreSQL при старте."""
@@ -20,15 +25,13 @@ def _load_from_db():
     conn.close()
 
     chunks = [row[0] for row in rows]
-    embeddings = np.array([row[1] for row in rows])  # JSONB возвращается уже списком
+    embeddings = np.array([row[1] for row in rows])
     return chunks, embeddings
 
 chunks, embeddings = _load_from_db()
 print(f"RAG: загружено {len(chunks)} чанков из базы")
 
-def find_relevant(question: str, top_k: int = 2):
-    from sentence_transformers import SentenceTransformer
-    model = SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
+def find_relevant(question: str, top_k: int = 4):
     q_emb = model.encode([question])[0]
     sims = []
     for i, emb in enumerate(embeddings):

@@ -82,3 +82,4 @@ python bot.py
 - [ ] RAG: ответы по базе знаний (pgvector)
 - [ ] Команда /stats — статистика из БД
 - [ ] Деплой в Docker на VPS
+- [x] База знаний и эмбеддинги в PostgreSQL (JSONB + numpy cosine similarity)
