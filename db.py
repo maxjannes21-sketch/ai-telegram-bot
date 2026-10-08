@@ -110,3 +110,47 @@ def get_stats():
         "today_messages": today_messages,
         "top_users": top_users,
     }
+def get_all_users():
+    """Все пользователи из базы."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT id, telegram_id, username, created_at
+        FROM users
+        ORDER BY created_at DESC
+    """)
+    rows = cursor.fetchall()
+    cursor.close()
+    conn.close()
+    return [
+        {
+            "id": r[0],
+            "telegram_id": r[1],
+            "username": r[2],
+            "created_at": r[3].isoformat()
+        }
+        for r in rows
+    ]
+
+def get_user_messages(user_id: int):
+    """Все сообщения конкретного пользователя."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT m.id, m.message_text, m.bot_reply, m.created_at
+        FROM messages m
+        WHERE m.user_id = %s
+        ORDER BY m.created_at
+    """, (user_id,))
+    rows = cursor.fetchall()
+    cursor.close()
+    conn.close()
+    return [
+        {
+            "id": r[0],
+            "message": r[1],
+            "reply": r[2],
+            "created_at": r[3].isoformat()
+        }
+        for r in rows
+    ]
