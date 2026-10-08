@@ -1,4 +1,5 @@
 import logging
+
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
 from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, MessageHandler, filters
 from openai import OpenAI
@@ -54,6 +55,8 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "Доступные команды:\n"
         "/start — главное меню\n"
         "/help — помощь\n\n"
+        "/menu - меню нашего заведения\n\n"
+        "/stats - статистика бота\n\n"
         "Нажмите «Пройти тест», чтобы открыть тестовый модуль."
     )
 async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -74,6 +77,20 @@ async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"📅 Сообщений сегодня: {s['today_messages']}\n\n"
         f"🏆 Топ-3 активных:\n{top_text}"
     )
+async def menu_command(update: Update, context: ContextTypes.DEFAULT_TYPE):  
+        text = (
+        "🍕 Наше меню:\n"
+        "•Пицца «Пепперони» — 22 рубля. Состав: томатный соус, моцарелла, пепперони, орегано. Размер — 33 см.\n"
+        "•Пицца «Маргарита» — 16 рублей. Состав: томатный соус, моцарелла, базилик. Подходит вегетарианцам.]\n"
+        "•Пицца «Четыре сыра» — 26 рублей. Состав: сливочный соус, моцарелла, горгонзола, пармезан, чеддер.\n"
+        # ПРОПУСК 1: допиши сюда 3 строки про пиццы.
+        # Загляни в knowledge.txt — там есть наз    вания и цены.   
+        # Формат каждой строки: "• Название — цена руб.\n"
+        # (символ • копируй отсюда)
+    )
+        await update.message.reply_text(text)
+    
+
 async def ai_reply(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_message = update.message.text
     await update.message.chat.send_action(action="typing")
@@ -133,6 +150,7 @@ if __name__ == '__main__':
 )
     application.add_handler(CommandHandler('start', start))
     application.add_handler(CommandHandler('stats', stats_command))
+    application.add_handler(CommandHandler('menu', menu_command))
     application.add_handler(CommandHandler('help', help_command))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, ai_reply))
     print("Бот с Mini App запущен...")
