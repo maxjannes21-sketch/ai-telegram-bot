@@ -108,7 +108,7 @@ async def ai_reply(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Собираем контекст для GPT
     messages = []
      # RAG: ищем релевантные фрагменты из базы знаний
-    relevant = rag.find_relevant(user_message, top_k=2)
+    relevant = rag.find_relevant(user_message, top_k=4)
     context = "\n\n".join([text for text, sim in relevant])
 
     system_prompt = (
