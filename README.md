@@ -12,6 +12,8 @@ Telegram-бот на Python с интеграцией GPT-4o-mini и долго�
 - 💾 Полная история переписки в PostgreSQL
 - 📱 Telegram Mini App (веб-приложение внутри Telegram)
 - 🔒 Секреты вынесены в переменные окружения (.env)
+- 🌐 REST API на FastAPI со Swagger-документацией (/docs)
+- 📊 Веб-дашборд статистики (stats.html → API → PostgreSQL)
 
 ## Стек
 
@@ -34,6 +36,8 @@ my_bot/
 ├── mini_app.html   # Mini App: интерфейс внутри Telegram
 ├── .env            # Секреты (не в репозитории)
 └── .env.example    # Шаблон для .env
+└── api.py   
+└── stats.html
 ```
 
 ## Схема базы данных

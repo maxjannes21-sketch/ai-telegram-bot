@@ -1,6 +1,8 @@
 from fastapi import FastAPI
 import db
 from pydantic import BaseModel
+from fastapi.middleware.cors import CORSMiddleware
+
 
 class MessageIn(BaseModel):
     telegram_id: int
@@ -12,6 +14,13 @@ app = FastAPI(
     title="AI Bot API",
     description="REST API поверх базы данных Telegram-бота",
     version="1.0"
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],     # пока разрешаем всех (для разработки)
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 @app.get("/")
