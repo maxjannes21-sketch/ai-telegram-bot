@@ -3,8 +3,7 @@ import logging
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
 from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, MessageHandler, filters
 from openai import OpenAI
-import requests
-from datetime import datetime
+
 import db
 import os
 import rag
@@ -14,7 +13,7 @@ load_dotenv()
 
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 OPENROUTER_KEY = os.getenv("OPENROUTER_KEY")
-SHEETS_URL = 'https://script.google.com/macros/s/AKfycbxVmOUSFmAuPkYgOK5jS6TxhsHoR458CXYvZ5E0o0AEx-c68jGtBQvmNa-fitwByR69Lg/exec'
+
 MINI_APP_URL = 'https://maxjannes21-sketch.github.io/my-mini-app/'  # URL где будет хоститься mini_app.html
 
 client = OpenAI(
@@ -77,18 +76,16 @@ async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"📅 Сообщений сегодня: {s['today_messages']}\n\n"
         f"🏆 Топ-3 активных:\n{top_text}"
     )
-async def menu_command(update: Update, context: ContextTypes.DEFAULT_TYPE):  
-        text = (
+async def menu_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    text = (
         "🍕 Наше меню:\n"
-        "•Пицца «Пепперони» — 22 рубля. Состав: томатный соус, моцарелла, пепперони, орегано. Размер — 33 см.\n"
-        "•Пицца «Маргарита» — 16 рублей. Состав: томатный соус, моцарелла, базилик. Подходит вегетарианцам.]\n"
-        "•Пицца «Четыре сыра» — 26 рублей. Состав: сливочный соус, моцарелла, горгонзола, пармезан, чеддер.\n"
-        # ПРОПУСК 1: допиши сюда 3 строки про пиццы.
-        # Загляни в knowledge.txt — там есть наз    вания и цены.   
-        # Формат каждой строки: "• Название — цена руб.\n"
-        # (символ • копируй отсюда)
+        "• Пицца «Пепперони» — 22 руб. Томатный соус, моцарелла, пепперони, орегано. 33 см.\n"
+        "• Пицца «Маргарита» — 16 руб. Томатный соус, моцарелла, базилик. Вегетарианская.\n"
+        "• Пицца «Четыре сыра» — 26 руб. Сливочный соус, моцарелла, горгонзола, пармезан, чеддер.\n"
+        "• Пицца «Дьябло» — 24 руб. Томатный соус, моцарелла, салями, халапеньо, табаско. Самая острая!\n"
+        "• Пицца «Светлогорская» — 27 руб. Томатный соус, моцарелла, охотничьи колбаски, маринованные огурцы. Новинка!\n"
     )
-        await update.message.reply_text(text)
+    await update.message.reply_text(text)
     
 
 async def ai_reply(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -106,7 +103,7 @@ async def ai_reply(update: Update, context: ContextTypes.DEFAULT_TYPE):
     history = db.get_recent_messages(user_id, limit=10)
 
     # Собираем контекст для GPT
-    messages = []
+    
      # RAG: ищем релевантные фрагменты из базы знаний
     relevant = rag.find_relevant(user_message, top_k=4)
     context = "\n\n".join([text for text, sim in relevant])

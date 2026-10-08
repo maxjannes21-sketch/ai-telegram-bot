@@ -25,20 +25,23 @@ Telegram-бот на Python с интеграцией GPT-4o-mini и долго�
 | База данных | PostgreSQL 18 |
 | Mini App | HTML / CSS / JavaScript |
 | Хостинг Mini App | GitHub Pages |
+| RAG | sentence-transformers (paraphrase-multilingual-MiniLM-L12-v2) |
+| API | FastAPI + Uvicorn |
 
 ## Структура проекта
-
-```
 my_bot/
-├── bot.py          # Логика бота, обработчики команд
-├── db.py           # Работа с PostgreSQL (пользователи, сообщения, история)
-├── check_db.py     # Утилита для просмотра содержимого базы
-├── mini_app.html   # Mini App: интерфейс внутри Telegram
-├── .env            # Секреты (не в репозитории)
-└── .env.example    # Шаблон для .env
-└── api.py   
-└── stats.html
-```
+├── bot.py                # Логика бота, обработчики команд
+├── db.py                 # Работа с PostgreSQL (пользователи, сообщения, история)
+├── rag.py                # RAG: векторный поиск по базе знаний
+├── api.py                # REST API на FastAPI
+├── load_knowledge.py     # Загрузка knowledge.txt → PostgreSQL (черновые эмбеддинги)
+├── migrate_knowledge.py  # Создание таблицы knowledge_chunks
+├── check_db.py           # Утилита для просмотра содержимого базы
+├── stats.html            # Веб-дашборд статистики
+├── mini_app.html         # Mini App: интерфейс внутри Telegram
+├── knowledge.txt         # Исходник базы знаний (чанки через пустую строку)
+├── .env                  # Секреты (не в репозитории)
+└── .env.example          # Шаблон для .env
 
 ## Схема базы данных
 
@@ -78,8 +81,7 @@ python bot.py
 
 ## Планы по развитию
 
-- [ ] REST API на FastAPI поверх базы
-- [ ] RAG: ответы по базе знаний (pgvector)
-- [ ] Команда /stats — статистика из БД
+- [x] REST API на FastAPI поверх базы
+- [x] RAG: ответы по базе знаний (эмбеддинги в PostgreSQL, JSONB + numpy)
+- [x] Команда /stats — статистика из БД
 - [ ] Деплой в Docker на VPS
-- [x] База знаний и эмбеддинги в PostgreSQL (JSONB + numpy cosine similarity)
