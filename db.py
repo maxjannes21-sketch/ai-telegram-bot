@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 DB_CONFIG = {
-    "host": "localhost",
+    "host": os.getenv("DB_HOST", "localhost"),
     "port": 5432,
     "database": "postgres",
     "user": "postgres",

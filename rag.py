@@ -13,7 +13,7 @@ model = SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
 def _load_from_db():
     """Загружает чанки и эмбеддинги из PostgreSQL при старте."""
     conn = psycopg2.connect(
-        host="localhost",
+        host= os.getenv("DB_HOST", "localhost"),
         database="postgres",
         user="postgres",
         password=os.getenv("DB_PASSWORD")

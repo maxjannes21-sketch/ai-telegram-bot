@@ -1,0 +1,22 @@
+services:
+  db:
+    image: postgres:18
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql
+    ports:
+      - "5433:5432"
+
+  bot:
+    build: .
+    restart: always
+    env_file: .env
+    environment:
+      DB_HOST: db
+    depends_on:
+      - db
+
+volumes:
+  pgdata:

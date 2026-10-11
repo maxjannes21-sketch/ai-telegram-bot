@@ -19,7 +19,7 @@ embeddings = model.encode(chunks)
 
 # Кладём в базу
 conn = psycopg2.connect(
-    host="localhost",
+   "host": os.getenv("DB_HOST", "localhost"),
     database="postgres",
     user="postgres",
     password=os.getenv("DB_PASSWORD")
